@@ -18,13 +18,21 @@ arduino IDE to debug changes.
 Changed all inputs to work with arduino internal pull-up
 resistors. Inverted the uint8_t values so that they can
 be summed for quick reading of inputs and mathematical
-applications. 
+applications.
 01/15/2022
 Changed I/O to reflect that encoders' channel A needs
 to be connected to INT0 and INT1 pins (2 and 3). Started
 writing interrupt code to test encoder functionality.
-
+01/30/2022
+Made beta encoder on polling based code to compare polling
+vs External Interrupt based systems.
+Implemented arduino MIDI library
+https://github.com/FortySevenEffects/arduino_midi_library
+And RotaryEncoder library
+https://github.com/mathertel/RotaryEncoder
 */
+
+//**INVOCATIONS**//
 #include <Arduino.h>
 #include <RotaryEncoder.h>
 #include <MIDI.h>
@@ -40,7 +48,7 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 #define PIN_IN1 A5
 #define PIN_IN2 3
 
-#define LED 13 //for MIDI signal indicator
+#define midiLED 13 //LED at Pin 13 for MIDI signal indicator
 
 uint8_t whiteKeys = 0;
 uint8_t blackKeys = 0;
@@ -49,12 +57,34 @@ uint8_t blackNum = 0;
 uint8_t encAlpha = 0;
 uint8_t encBeta = 0;
 
+bool pinState[16];
+/*
+bool pinState2=1;
+bool pinState3=1;
+bool pinState4=1;
+bool pinState5=1;
+bool pinState6=1;
+bool pinState7=1;
+bool pinState8=1;
+bool pinState9=1;
+bool pinState10=1;
+bool pinState11=1;
+bool pinStateA0=1;
+bool pinStateA1=1;
+bool pinStateA2=1;
+bool pinStateA3=1;
+bool pinStateA4=1;
+bool pinStateA5=1;
+*/
+
 volatile int master_count = 0; // universal count
-volatile byte INTFLAG1 = 0; // interrupt status flag
+volatile byte INTFLAG1 = 0; // interrupt status flag for external interrupts
 
 // Setup a RotaryEncoder with 2 steps per latch for the 2 signal input pins:
 RotaryEncoder encoder(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::TWO03);
 
+
+//**EXTERNAL INTERRUPT SERVICE ROUTINE**//
 void flag() {
   INTFLAG1 = 1;
   // add 1 to count for CW
@@ -65,16 +95,58 @@ void flag() {
     master_count-- ;
 }
 
+
+//**PCINT SETUP**//
+void pciSetup(byte pin){
+  *digitalPinToPCMSK(pin)|= bit(digitalPinToPCMSKbit(pin));
+  PCIFR |= bit(digitalPinToPCICRbit(pin));
+  PCICR |= bit(digitalPinToPCICRbit(pin));
+}
+
+//D8-D13 Interrupt Handler
+ISR(PCINT0_vect){
+  for(byte i=8;i++;i<12){
+  if(digitalRead(i)==0 && pinState[i]==1){
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
+    MIDI.sendNoteOn(i+65,127,1);  // Send a Note (pitch 65, velo 127 on channel 1)
+    pinState[i]=0;
+  }
+  elseif(digitalRead(i)==1 && pinState[i]==0){
+    MIDI.sendNoteOff(i+65,0,1);   // Stop the note
+    digitalWrite(midiLED,LOW);
+    pinState[i]=1;
+    }
+  }
+}
+
+//A0-A5 Interrupt Handler
+ISR(PCINT1_vect){
+  for(byte i=0;i++;i<4){
+  if(digitalRead(i)==0 && pinState[i]==1){
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
+    MIDI.sendNoteOn(i+65,127,1);  // Send a Note (pitch 65, velo 127 on channel 1)
+    pinState[i]=0;
+  }
+  elseif(digitalRead(i)==1 && pinState[i]==0){
+    MIDI.sendNoteOff(i+65,0,1);   // Stop the note
+    digitalWrite(midiLED,LOW);
+    pinState[i]=1;
+    }
+  }
+}
+
+
+
+//**GENERAL SETUP**//
 void setup() {
-  pinMode(LED, OUTPUT);
-  MIDI.begin(4);              // Launch MIDI with default options
-
-// COMMENTED OUT FOR MIDI SIGNALLING
-  Serial.begin(115200); //sets baud rate for serial monitor
-//  Serial.println(master_count); //Print master_count for encAlpha monitoring
+  pinMode(midiLED, OUTPUT);
+  MIDI.begin(4); // Launch MIDI with default options
 
 
-  
+  Serial.begin(115200); //sets baud rate for serial monitor and MIDI signalling
+  // COMMENTED OUT FOR MIDI SIGNALLING
+  //  Serial.println(master_count); //Print master_count for encAlpha monitoring
+
   //Input settings for keyboard keys in pullup resistor configuration
   //Black Keys
   pinMode(A0, INPUT_PULLUP);
@@ -97,7 +169,7 @@ void setup() {
   pinMode(alphaCHB, INPUT);
   digitalWrite(alphaCHA, HIGH);
   digitalWrite(alphaCHB, HIGH);
-  attachInterrupt(0, flag, RISING); 
+  attachInterrupt(0, flag, RISING);
   //encBeta
   /*
   pinMode(betaCHA, INPUT);
@@ -107,15 +179,12 @@ void setup() {
   //TODO UART Settings
 */
 
-  //!!OLD: registry based setup for I/O
-  //DDRD &= B00000011; //sets Pins 0-7 to read
-  //DDRB &= B11000000; //sets Pins 8-13 to read
-  //PORTD &= B00000011; //Sets pins 2-6 to low, leaves 0 and 1 for Rx and Tx
-  //PORTB &= B11000000; //Sets pins 8-11 to low, leaves 12 and 13 for oscillator
 }
 
+
+//**MAIN LOOP**//
 void loop() {
-  //Set Keys bits by concatenation to bring together inputs from PB and PC Registers.  
+  //Set Keys bits by concatenation to bring together inputs from PB and PC Registers.
   //Bit 7 is set to 1 so when inverting, whiteNum gets correct summation
   whiteKeys = (digitalRead(5) << 0) + (digitalRead(6) << 1) + (digitalRead(7) << 2)
   + (digitalRead(8) << 3) + (digitalRead(9) << 4) + (digitalRead(10) << 5) +
@@ -135,7 +204,7 @@ void loop() {
     Serial.println((int)(encoder.getDirection()));
     pos = newPos;
   }
-  
+
   if (INTFLAG1)   {
      Serial.println(master_count);
      delay(100);
@@ -146,7 +215,7 @@ void loop() {
   //so button presses are read as high logic level
   whiteNum = ~whiteKeys;
   blackNum = ~blackKeys;
-  
+
 // COMMENTED OUT FOR MIDI SIGNALLING
 /*
   if((blackKeys == 255) && (whiteKeys == 255))
@@ -160,38 +229,38 @@ void loop() {
   }
 */
   if(blackNum == 1){
-    digitalWrite(LED,HIGH);     // Blink the LED
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(42,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
     delay(500);    // Wait for a second
     MIDI.sendNoteOff(42,0,1);   // Stop the note
-    digitalWrite(LED,LOW);    
-  }  
+    digitalWrite(midiLED,LOW);
+  }
    if(blackNum == 2){
-    digitalWrite(LED,HIGH);     // Blink the LED
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(43,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
     delay(500);    // Wait for a second
     MIDI.sendNoteOff(43,0,1);   // Stop the note
-    digitalWrite(LED,LOW);    
-  }  
+    digitalWrite(midiLED,LOW);
+  }
      if(blackNum == 4){
-    digitalWrite(LED,HIGH);     // Blink the LED
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(44,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
     delay(500);    // Wait for a second
     MIDI.sendNoteOff(44,0,1);   // Stop the note
-    digitalWrite(LED,LOW);    
-  }  
+    digitalWrite(midiLED,LOW);
+  }
      if(blackNum == 8){
-    digitalWrite(LED,HIGH);     // Blink the LED
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(45,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
     delay(500);    // Wait for a second
     MIDI.sendNoteOff(45,0,1);   // Stop the note
-    digitalWrite(LED,LOW);    
-  }  
+    digitalWrite(midiLED,LOW);
+  }
      if(blackNum == 16){
-    digitalWrite(LED,HIGH);     // Blink the LED
+    digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(46,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
     delay(500);    // Wait for a second
     MIDI.sendNoteOff(46,0,1);   // Stop the note
-    digitalWrite(LED,LOW);    
-  }  
+    digitalWrite(midiLED,LOW);
+  }
 }
