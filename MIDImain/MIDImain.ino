@@ -338,10 +338,13 @@ void loop() {
 
   int newPos = encoder.getPosition();
   if (pos != newPos) {
+    /*
     Serial.print("pos:");
     Serial.print(newPos);
     Serial.print(" dir:");
     Serial.println((int)(encoder.getDirection()));
+    */
+    send(ControlChange,20,newPos,1); //Grain Location CC Message
     pos = newPos;
   }
 
