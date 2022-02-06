@@ -174,6 +174,8 @@ ISR(PCINT0_vect){
   }
 }
 
+/* commented out so I can test midi messages with the old method
+ *  while troubleshooting midi monitor
 //A0-A5 Interrupt Handler
 //Keys 2,4,7,9
 ISR(PCINT1_vect){
@@ -218,6 +220,7 @@ ISR(PCINT1_vect){
     pinState[9]=1;
   }
 }
+*/
 
 //D0-D7 Interrupt Handler
 //Keys 1,3,5,11
@@ -278,7 +281,7 @@ void setup() {
   //Input settings for keyboard keys in pullup resistor configuration
   //Black Keys
   pinMode(A0, INPUT_PULLUP);
-  pciSetup(A0);
+  //pciSetup(A0);
   pinMode(A1, INPUT_PULLUP);
   pciSetup(A1);
   pinMode(A2, INPUT_PULLUP);
@@ -344,7 +347,7 @@ void loop() {
     Serial.print(" dir:");
     Serial.println((int)(encoder.getDirection()));
     */
-    send(ControlChange,20,newPos,1); //Grain Location CC Message
+    MIDI.sendControlChange(20,newPos,1); //Grain Location CC Message
     pos = newPos;
   }
 
@@ -371,7 +374,7 @@ void loop() {
   delay(500); //Delay so serial monitor is not spammed with input responses
   }
 */
-/* Commented out for new interrupt functionality
+
   if(blackNum == 1){
     digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(42,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
@@ -379,6 +382,7 @@ void loop() {
     MIDI.sendNoteOff(42,0,1);   // Stop the note
     digitalWrite(midiLED,LOW);
   }
+/* Commented out for new interrupt functionality
    if(blackNum == 2){
     digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(43,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
