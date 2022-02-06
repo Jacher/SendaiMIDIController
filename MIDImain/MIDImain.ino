@@ -44,30 +44,30 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 #define betaCHA 3
 #define betaCHB A5
 
-#define key1 5; //MIDI 60
-#define Midi1 60;
-#define key2 A0; //MIDI 61
-#define Midi2 61;
-#define key3 6; //MIDI 62
-#define Midi3 62;
-#define key4 A1; //MIDI 63
-#define Midi4 63;
-#define key5 7; //MIDI 64
-#define Midi5 64;
-#define key6 8; //MIDI 65
-#define Midi6 65;
-#define key7 A2; //MIDI 66
-#define Midi7 66;
-#define key8 9; //MIDI 67
-#define Midi8 67;
-#define key9 A3; //MIDI 68
-#define Midi9 68;
-#define key10 10; //MIDI 69
-#define Midi10 69;
-#define key11 4; //MIDI 70
-#define Midi11 70;
-#define key12 11; //MIDI 71
-#define Midi12 71;
+#define key1 5 //MIDI 60
+#define Midi1 60
+#define key2 A0 //MIDI 61
+#define Midi2 61
+#define key3 6 //MIDI 62
+#define Midi3 62
+#define key4 A1 //MIDI 63
+#define Midi4 63
+#define key5 7 //MIDI 64
+#define Midi5 64
+#define key6 8 //MIDI 65
+#define Midi6 65
+#define key7 A2 //MIDI 66
+#define Midi7 66
+#define key8 9 //MIDI 67
+#define Midi8 67
+#define key9 A3 //MIDI 68
+#define Midi9 68
+#define key10 10 //MIDI 69
+#define Midi10 69
+#define key11 4 //MIDI 70
+#define Midi11 70
+#define key12 11 //MIDI 71
+#define Midi12 71
 
 // Example for Arduino UNO with input signals on pin 2 and 3
 #define PIN_IN1 A5
@@ -83,7 +83,7 @@ uint8_t blackNum = 0;
 uint8_t encAlpha = 0;
 uint8_t encBeta = 0;
 
-bool pinState[16]=1;
+bool pinState[16]={1};
 /*
 bool pinState2=1;
 bool pinState3=1;
@@ -278,18 +278,30 @@ void setup() {
   //Input settings for keyboard keys in pullup resistor configuration
   //Black Keys
   pinMode(A0, INPUT_PULLUP);
+  pciSetup(A0);
   pinMode(A1, INPUT_PULLUP);
+  pciSetup(A1);
   pinMode(A2, INPUT_PULLUP);
+  pciSetup(A2);
   pinMode(A3, INPUT_PULLUP);
+  pciSetup(A3);
   pinMode(4, INPUT_PULLUP);
+  pciSetup(4);
   //White Keys
   pinMode(5, INPUT_PULLUP);
+  pciSetup(5);
   pinMode(6, INPUT_PULLUP);
+  pciSetup(6);
   pinMode(7, INPUT_PULLUP);
+  pciSetup(7);
   pinMode(8, INPUT_PULLUP);
+  pciSetup(8);
   pinMode(9, INPUT_PULLUP);
+  pciSetup(9);
   pinMode(10, INPUT_PULLUP);
+  pciSetup(10);
   pinMode(11, INPUT_PULLUP);
+  pciSetup(11);
 
   //Rotary Encoder input settings
   //encAlpha
