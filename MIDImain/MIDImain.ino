@@ -30,6 +30,9 @@ Implemented arduino MIDI library
 https://github.com/FortySevenEffects/arduino_midi_library
 And RotaryEncoder library
 https://github.com/mathertel/RotaryEncoder
+02/07/2022
+Iteration log has been taken to github.
+https://github.com/Jacher/SendaiMIDIController
 */
 
 //**INVOCATIONS**//
@@ -69,11 +72,6 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 #define key12 11 //MIDI 71
 #define Midi12 71
 
-// Example for Arduino UNO with input signals on pin 2 and 3
-#define PIN_IN1 A5
-#define PIN_IN2 3
-
-
 #define midiLED 13 //LED at Pin 13 for MIDI signal indicator
 
 uint8_t whiteKeys = 0;
@@ -83,32 +81,14 @@ uint8_t blackNum = 0;
 uint8_t encAlpha = 0;
 uint8_t encBeta = 0;
 
-bool pinState[16]={1};
-/*
-bool pinState2=1;
-bool pinState3=1;
-bool pinState4=1;
-bool pinState5=1;
-bool pinState6=1;
-bool pinState7=1;
-bool pinState8=1;
-bool pinState9=1;
-bool pinState10=1;
-bool pinState11=1;
-bool pinStateA0=1;
-bool pinStateA1=1;
-bool pinStateA2=1;
-bool pinStateA3=1;
-bool pinStateA4=1;
-bool pinStateA5=1;
-*/
+volatile bool pinState[16]={1};
 
 volatile int master_count = 0; // universal count
 volatile byte INTFLAG1 = 0; // interrupt status flag for external interrupts
 
 // Setup a RotaryEncoder with 2 steps per latch for the 2 signal input pins:
-RotaryEncoder encoder(PIN_IN1, PIN_IN2, RotaryEncoder::LatchMode::TWO03);
-
+RotaryEncoder encoderA(alphaCHB, alphaCHA, RotaryEncoder::LatchMode::TWO03);
+RotaryEncoder encoderB(betaCHB, betaCHA, RotaryEncoder::LatchMode::TWO03);
 
 //**EXTERNAL INTERRUPT SERVICE ROUTINE**//
 void flag() {
@@ -174,8 +154,6 @@ ISR(PCINT0_vect){
   }
 }
 
-/* commented out so I can test midi messages with the old method
- *  while troubleshooting midi monitor
 //A0-A5 Interrupt Handler
 //Keys 2,4,7,9
 ISR(PCINT1_vect){
@@ -220,7 +198,7 @@ ISR(PCINT1_vect){
     pinState[9]=1;
   }
 }
-*/
+
 
 //D0-D7 Interrupt Handler
 //Keys 1,3,5,11
@@ -281,7 +259,7 @@ void setup() {
   //Input settings for keyboard keys in pullup resistor configuration
   //Black Keys
   pinMode(A0, INPUT_PULLUP);
-  //pciSetup(A0);
+  pciSetup(A0);
   pinMode(A1, INPUT_PULLUP);
   pciSetup(A1);
   pinMode(A2, INPUT_PULLUP);
@@ -327,6 +305,76 @@ void setup() {
 
 //**MAIN LOOP**//
 void loop() {
+/*
+  static int posA = 0;
+  encoderA.tick();
+
+  int newPosA = encoderA.getPosition();
+  if (posA != newPosA) {
+    
+    Serial.print("pos:");
+    Serial.print(newPos);
+    Serial.print(" dir:");
+    Serial.println((int)(encoder.getDirection()));
+    
+    
+    MIDI.sendControlChange(20,newPosA,1); //Grain Location CC Message
+    posA = newPosA;
+  }
+
+  static int posB = 0;
+  encoderB.tick();
+  RotaryEncoder::Direction encBDirection encoderB.getDirection();
+  int newPosB = encoderB.getPosition();
+  */
+  encoderA.tick(); //Update encoder position
+  switch(encoderA.getDirection())
+  {
+    case RotaryEncoder::Direction::NOROTATION:
+      digitalWrite(midiLED,LOW);     // Blink the midiLED
+      break;
+    case RotaryEncoder::Direction::CLOCKWISE:
+      digitalWrite(midiLED,HIGH);     // Blink the midiLED
+      MIDI.sendControlChange(21,1,1);
+      break;
+    case RotaryEncoder::Direction::COUNTERCLOCKWISE:
+      digitalWrite(midiLED,HIGH);     // Blink the midiLED 
+      MIDI.sendControlChange(21,127,1);
+      break;
+  }
+  encoderB.tick();//Update encoder position
+  switch(encoderB.getDirection())
+  {
+    case RotaryEncoder::Direction::NOROTATION:
+      digitalWrite(midiLED,LOW);     // Blink the midiLED
+      break;
+    case RotaryEncoder::Direction::CLOCKWISE:
+      digitalWrite(midiLED,HIGH);     // Blink the midiLED
+      MIDI.sendControlChange(20,1,1);
+      break;
+    case RotaryEncoder::Direction::COUNTERCLOCKWISE:
+      digitalWrite(midiLED,HIGH);     // Blink the midiLED
+      MIDI.sendControlChange(20,127,1);
+      break;
+  }
+
+  /*
+  if (posB != newPosB) {
+
+    Serial.print("pos:");
+    Serial.print(newPos);
+    Serial.print(" dir:");
+    Serial.println((int)(encoder.getDirection()));
+
+
+    MIDI.sendControlChange(20,newPosB,1); //Grain Location CC Message
+    posB = newPosB;
+  }
+*/
+
+
+// COMMENTED OUT FOR MIDI SIGNALLING
+/*
   //Set Keys bits by concatenation to bring together inputs from PB and PC Registers.
   //Bit 7 is set to 1 so when inverting, whiteNum gets correct summation
   whiteKeys = (digitalRead(5) << 0) + (digitalRead(6) << 1) + (digitalRead(7) << 2)
@@ -335,35 +383,13 @@ void loop() {
 
   blackKeys = (digitalRead(A0) << 0) + (digitalRead(A1) << 1) + (digitalRead(A2) << 2)
   + (digitalRead(A3) << 3) + (digitalRead(4) << 4) + (1 << 5) + (1 << 6) + (1 << 7);
-
-  static int pos = 0;
-  encoder.tick();
-
-  int newPos = encoder.getPosition();
-  if (pos != newPos) {
-    /*
-    Serial.print("pos:");
-    Serial.print(newPos);
-    Serial.print(" dir:");
-    Serial.println((int)(encoder.getDirection()));
-    */
-    MIDI.sendControlChange(20,newPos,1); //Grain Location CC Message
-    pos = newPos;
-  }
-
-  if (INTFLAG1)   {
-     Serial.println(master_count);
-     delay(100);
-     INTFLAG1 = 0; // clear flag
-  }
-
+  
   //Inverting Keys and assigning to Num counterparts
   //so button presses are read as high logic level
+
   whiteNum = ~whiteKeys;
   blackNum = ~blackKeys;
-
-// COMMENTED OUT FOR MIDI SIGNALLING
-/*
+  
   if((blackKeys == 255) && (whiteKeys == 255))
   return;
   else{
@@ -375,6 +401,7 @@ void loop() {
   }
 */
 
+/* Commented out for new interrupt functionality
   if(blackNum == 1){
     digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(42,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
@@ -382,7 +409,7 @@ void loop() {
     MIDI.sendNoteOff(42,0,1);   // Stop the note
     digitalWrite(midiLED,LOW);
   }
-/* Commented out for new interrupt functionality
+
    if(blackNum == 2){
     digitalWrite(midiLED,HIGH);     // Blink the midiLED
     MIDI.sendNoteOn(43,127,1);  // Send a Note (pitch 42, velo 127 on channel 1)
