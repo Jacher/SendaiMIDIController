@@ -19,8 +19,11 @@ https://github.com/FortySevenEffects/arduino_midi_library
 And RotaryEncoder library
 https://github.com/mathertel/RotaryEncoder
 02/07/2022
-Iteration log has been taken to github.
+Iteration log has been taken to github:
 https://github.com/Jacher/SendaiMIDIController
+Also shoutout to Nick Gammon for his extensive
+documentation of arduino interrupt functionality
+http://gammon.com.au/interrupts
 */
 
 //**INVOCATIONS**//
