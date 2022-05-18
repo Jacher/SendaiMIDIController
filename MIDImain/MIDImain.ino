@@ -39,6 +39,16 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 #define alphaCHB A4
 #define betaCHA 3
 #define betaCHB A5
+/* 6 Encoder SETUP
+#define chiCHA 2
+#define chiCHB A4
+#define deltaCHA 3
+#define deltaCHB A5
+#define epsilonCHA 2
+#define epsilonCHB A4
+#define phiCHA 3
+#define phiCHB A5
+*/
 
 //Keys
 #define key1 5 //MIDI 60
@@ -75,6 +85,12 @@ volatile bool pinState[16]={1};//for state ISR state monitoring
 // Setup a RotaryEncoder with 2 steps per latch for the 2 signal input pins:
 RotaryEncoder encoderA(alphaCHB, alphaCHA, RotaryEncoder::LatchMode::TWO03);
 RotaryEncoder encoderB(betaCHB, betaCHA, RotaryEncoder::LatchMode::TWO03);
+/* 6 Encoder SETUP
+RotaryEncoder encoderC(chiCHB, chiCHA, RotaryEncoder::LatchMode::TWO03);
+RotaryEncoder encoderD(deltaCHB, deltaCHA, RotaryEncoder::LatchMode::TWO03);
+RotaryEncoder encoderE(epsilonCHB, epsilonCHA, RotaryEncoder::LatchMode::TWO03);
+RotaryEncoder encoderF(phiCHB, phiCHA, RotaryEncoder::LatchMode::TWO03);
+*/
 
 //**PCINT SETUP**//
 void pciSetup(byte pin){
@@ -266,6 +282,28 @@ void setup() {
   pinMode(betaCHB, INPUT);
   digitalWrite(betaCHA, HIGH);
   digitalWrite(betaCHB, HIGH);
+  /* 6 Encoder SETUP
+  //encChi
+  pinMode(chiCHA, INPUT);
+  pinMode(chiCHB, INPUT);
+  digitalWrite(chiCHA, HIGH);
+  digitalWrite(chiCHB, HIGH);
+  //encDelta
+  pinMode(deltaCHA, INPUT);
+  pinMode(deltaCHB, INPUT);
+  digitalWrite(deltaCHA, HIGH);
+  digitalWrite(deltaCHB, HIGH);
+  //encEpsilon
+  pinMode(epsilonCHA, INPUT);
+  pinMode(epsilonCHB, INPUT);
+  digitalWrite(epsilonCHA, HIGH);
+  digitalWrite(epsilonCHB, HIGH);
+  //encPhi
+  pinMode(phiCHA, INPUT);
+  pinMode(phiCHB, INPUT);
+  digitalWrite(phiCHA, HIGH);
+  digitalWrite(phiCHB, HIGH);
+  */
 }
 
 
@@ -282,7 +320,7 @@ void loop() {
       MIDI.sendControlChange(21,1,1);
       break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      digitalWrite(midiLED,HIGH);     // Blink the midiLED 
+      digitalWrite(midiLED,HIGH);     // Blink the midiLED
       MIDI.sendControlChange(21,127,1);
       break;
   }
