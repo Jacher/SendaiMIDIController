@@ -36,30 +36,33 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 //**PORT <-> I/O DEFINITIONS**//
 //Encoders
 //Alpha Encoder (Main Cursor)
-#define alphaCHA 22
-#define alphaCHB 24
-#define alphaSW 26
+#define alphaCHA 36
+#define alphaCHB 34
+#define alphaSW 38
 #define MidiSel 28 //Select/OK
 //Beta Encoder (Program Change)
-#define betaCHA 28
-#define betaCHB 30
+#define betaCHA 30
+#define betaCHB 28
 #define betaSW 32
 #define MidiSave 26 //Save Program
 // 6 Encoder SETUP
 //Chi Encoder (Grain Duration)
-#define chiCHA 34
-#define chiCHB 36
-#define chiSW 38
+#define chiCHA 44
+#define chiCHB 46
+#define chiSW 26
 //#define MidiCSW (unused)
 //Delta Encoder (Number of Grains)
 #define deltaCHA 40
 #define deltaCHB 42
 //Epsilon Encoder (Spray)
-#define epsilonCHA 44
-#define epsilonCHB 46
+#define epsilonCHA 24
+#define epsilonCHB 22
 //Phi Encoder (Volume)
-#define phiCHA 48
-#define phiCHB 50
+#define phiCHA 37
+#define phiCHB 35
+//Gamma Encoder (Grain Location)
+#define gammaCHA 48
+#define gammaCHB 50
 
 
 //Keys
@@ -93,136 +96,16 @@ MIDI_CREATE_DEFAULT_INSTANCE();
 
 //**DECLARATIONS**//
 volatile bool pinState[16]={1};//for pin state monitoring
+bool fast=0;
 
 // Setup a RotaryEncoder with 2 steps per latch for the 2 signal input pins:
-RotaryEncoder encoderA(alphaCHB, alphaCHA, RotaryEncoder::LatchMode::TWO03);
-RotaryEncoder encoderB(betaCHB, betaCHA, RotaryEncoder::LatchMode::TWO03);
-RotaryEncoder encoderC(chiCHB, chiCHA, RotaryEncoder::LatchMode::TWO03);
-RotaryEncoder encoderD(deltaCHB, deltaCHA, RotaryEncoder::LatchMode::TWO03);
-RotaryEncoder encoderE(epsilonCHB, epsilonCHA, RotaryEncoder::LatchMode::TWO03);
-RotaryEncoder encoderF(phiCHB, phiCHA, RotaryEncoder::LatchMode::TWO03);
-
-//**PCINT SETUP**//
-/*
-void pciSetup(byte pin){
-  *digitalPinToPCMSK(pin)|= bit(digitalPinToPCMSKbit(pin));
-  PCIFR |= bit(digitalPinToPCICRbit(pin));
-  PCICR |= bit(digitalPinToPCICRbit(pin));
-}
-*/
-/*
-//D8-D13 Interrupt Handler
-//Keys 6,8,10,12
-ISR(PCINT0_vect){
-  if(digitalRead(key6)==0 && pinState[6]==1){
-    MIDI.sendNoteOn(Midi6,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[6]=0;
-  }
-  else if(digitalRead(key6)==1 && pinState[6]==0){
-    MIDI.sendNoteOff(Midi6,0,1);   // Stop the note
-    pinState[6]=1;
-  }
-  if(digitalRead(key8)==0 && pinState[8]==1){
-    MIDI.sendNoteOn(Midi8,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[8]=0;
-  }
-  else if(digitalRead(key8)==1 && pinState[8]==0){
-    MIDI.sendNoteOff(Midi8,0,1);   // Stop the note
-    pinState[8]=1;
-  }
-  if(digitalRead(key10)==0 && pinState[10]==1){
-    MIDI.sendNoteOn(Midi10,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[10]=0;
-  }
-  else if(digitalRead(key10)==1 && pinState[10]==0){
-    MIDI.sendNoteOff(Midi10,0,1);   // Stop the note
-    pinState[10]=1;
-  }
-  if(digitalRead(key12)==0 && pinState[12]==1){
-    MIDI.sendNoteOn(Midi12,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[12]=0;
-  }
-  else if(digitalRead(key12)==1 && pinState[12]==0){
-    MIDI.sendNoteOff(Midi12,0,1);   // Stop the note
-    pinState[12]=1;
-  }
-}
-
-//A0-A5 Interrupt Handler
-//Keys 2,4,7,9
-ISR(PCINT1_vect){
-  if(digitalRead(key2)==0 && pinState[2]==1){
-    MIDI.sendNoteOn(Midi2,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[2]=0;
-  }
-  else if(digitalRead(key2)==1 && pinState[2]==0){
-    MIDI.sendNoteOff(Midi2,0,1);   // Stop the note
-    pinState[2]=1;
-  }
-  if(digitalRead(key4)==0 && pinState[4]==1){
-    MIDI.sendNoteOn(Midi4,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[4]=0;
-  }
-  else if(digitalRead(key4)==1 && pinState[4]==0){
-    MIDI.sendNoteOff(Midi4,0,1);   // Stop the note
-    pinState[4]=1;
-  }
-  if(digitalRead(key7)==0 && pinState[7]==1){
-    MIDI.sendNoteOn(Midi7,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[7]=0;
-  }
-  else if(digitalRead(key7)==1 && pinState[7]==0){
-    MIDI.sendNoteOff(Midi7,0,1);   // Stop the note
-    pinState[7]=1;
-  }
-  if(digitalRead(key9)==0 && pinState[9]==1){
-    MIDI.sendNoteOn(Midi9,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[9]=0;
-  }
-  else if(digitalRead(key9)==1 && pinState[9]==0){
-    MIDI.sendNoteOff(Midi9,0,1);   // Stop the note
-    pinState[9]=1;
-  }
-}
-
-
-//D0-D7 Interrupt Handler
-//Keys 1,3,5,11
-ISR(PCINT2_vect){
-  if(digitalRead(key1)==0 && pinState[1]==1){
-    MIDI.sendNoteOn(Midi1,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[1]=0;
-  }
-  else if(digitalRead(key1)==1 && pinState[1]==0){
-    MIDI.sendNoteOff(Midi1,0,1);   // Stop the note
-    pinState[1]=1;
-  }
-  if(digitalRead(key3)==0 && pinState[3]==1){
-    MIDI.sendNoteOn(Midi3,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[3]=0;
-  }
-  else if(digitalRead(key3)==1 && pinState[3]==0){
-    MIDI.sendNoteOff(Midi3,0,1);   // Stop the note
-    pinState[3]=1;
-  }
-  if(digitalRead(key5)==0 && pinState[5]==1){
-    MIDI.sendNoteOn(Midi5,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[5]=0;
-  }
-  else if(digitalRead(key5)==1 && pinState[5]==0){
-    MIDI.sendNoteOff(Midi5,0,1);   // Stop the note
-    pinState[5]=1;
-  }
-  if(digitalRead(key11)==0 && pinState[11]==1){
-    MIDI.sendNoteOn(Midi11,127,1);  // Send a Note (pitch,velocity,channel)
-    pinState[11]=0;
-  }
-  else if(digitalRead(key11)==1 && pinState[11]==0){
-    MIDI.sendNoteOff(Midi11,0,1);   // Stop the note
-    pinState[11]=1;
-  }
-}
-*/
+RotaryEncoder encoderA(alphaCHB, alphaCHA, RotaryEncoder::LatchMode::FOUR0);
+RotaryEncoder encoderB(betaCHB, betaCHA, RotaryEncoder::LatchMode::FOUR0);
+RotaryEncoder encoderC(chiCHB, chiCHA, RotaryEncoder::LatchMode::FOUR0);
+RotaryEncoder encoderD(deltaCHB, deltaCHA, RotaryEncoder::LatchMode::FOUR0);
+RotaryEncoder encoderE(epsilonCHB, epsilonCHA, RotaryEncoder::LatchMode::FOUR0);
+RotaryEncoder encoderF(phiCHB, phiCHA, RotaryEncoder::LatchMode::FOUR0);
+RotaryEncoder encoderG(gammaCHB, gammaCHA, RotaryEncoder::LatchMode::FOUR0);
 
 //**GENERAL SETUP**//
 void setup() {
@@ -247,8 +130,9 @@ void setup() {
   pinMode(13, INPUT_PULLUP);
   pinMode(26, INPUT_PULLUP);
   pinMode(32, INPUT_PULLUP);
+  pinMode(chiSW, INPUT_PULLUP);
   pinMode(52, INPUT_PULLUP);
-  
+
   //Rotary Encoder input settings
   //encAlpha
   pinMode(alphaCHA, INPUT);
@@ -281,6 +165,17 @@ void setup() {
   pinMode(phiCHB, INPUT);
   digitalWrite(phiCHA, HIGH);
   digitalWrite(phiCHB, HIGH);
+  //encGamma
+  pinMode(gammaCHA, INPUT);
+  pinMode(gammaCHB, INPUT);
+  digitalWrite(gammaCHA, HIGH);
+  digitalWrite(gammaCHB, HIGH);
+
+
+  //debug
+  pinMode(14, OUTPUT);
+  digitalWrite(14, HIGH);
+  
 }
 
 
@@ -316,10 +211,16 @@ void loop() {
     case RotaryEncoder::Direction::NOROTATION:
       break;
     case RotaryEncoder::Direction::CLOCKWISE:
-      MIDI.sendControlChange(21,1,1);
+      if(fast==0)
+      MIDI.sendControlChange(21,10,1);
+      else
+      MIDI.sendControlChange(21,30,1);
       break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      MIDI.sendControlChange(21,127,1);
+      if(fast==0)
+      MIDI.sendControlChange(21,117,1);
+      else
+      MIDI.sendControlChange(21,97,1);
       break;
   }
   encoderD.tick();//Update encoder position
@@ -340,10 +241,16 @@ void loop() {
     case RotaryEncoder::Direction::NOROTATION:
       break;
     case RotaryEncoder::Direction::CLOCKWISE:
-      MIDI.sendControlChange(22,1,1);
+      if(fast==0)
+      MIDI.sendControlChange(22,5,1);
+      else
+      MIDI.sendControlChange(22,20,1);
       break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      MIDI.sendControlChange(22,127,1);
+      if(fast==0)
+      MIDI.sendControlChange(22,122,1);
+      else
+      MIDI.sendControlChange(22,107,1);
       break;
   }
   encoderF.tick();//Update encoder position
@@ -352,17 +259,37 @@ void loop() {
     case RotaryEncoder::Direction::NOROTATION:
       break;
     case RotaryEncoder::Direction::CLOCKWISE:
-      MIDI.sendControlChange(7,1,1);
+        MIDI.sendControlChange(7,1,1);
       break;
     case RotaryEncoder::Direction::COUNTERCLOCKWISE:
-      MIDI.sendControlChange(7,127,1);
+        MIDI.sendControlChange(7,127,1);
       break;
   }
+  encoderG.tick();//Update encoder position
+  switch(encoderG.getDirection()) //**GRAIN LOCATION**
+  {
+    case RotaryEncoder::Direction::NOROTATION:
+      break;
+    case RotaryEncoder::Direction::CLOCKWISE:
+      if(fast==0)
+        MIDI.sendControlChange(20,1,1);
+      else
+        MIDI.sendControlChange(20,10,1);
+      break;
+    case RotaryEncoder::Direction::COUNTERCLOCKWISE:
+      if(fast==0)
+        MIDI.sendControlChange(20,127,1);
+      else
+        MIDI.sendControlChange(20,117,1);
+      break;
+  }
+
+//**Additional Button functionality**//
 //Record, Select/OK, Program Save button functionality
 
 //**RECORD**
   if(digitalRead(Rec)==0 && pinState[13]==1){
-    MIDI.sendNoteOn(MidiRec,1,1);  // Send a Note (pitch,velocity,channel)
+    MIDI.sendControlChange(MidiRec,1,1);  // Send a CC (CC,velocity,channel)
     pinState[13]=0;
   }
   else if(digitalRead(Rec)==1 && pinState[13]==0){
@@ -370,21 +297,30 @@ void loop() {
   }
 //**SELECT/OK
   if(digitalRead(alphaSW)==0 && pinState[14]==1){
-    MIDI.sendNoteOn(MidiSel,127,1);  // Send a Note (pitch,velocity,channel)
+    MIDI.sendControlChange(MidiSel,1,1);  // Send a CC (CC,velocity,channel)
     pinState[14]=0;
   }
   else if(digitalRead(alphaSW)==1 && pinState[14]==0){
-    MIDI.sendNoteOff(MidiSel,0,1);   // Stop the note
     pinState[14]=1;
   }
 //**SAVE**
   if(digitalRead(betaSW)==0 && pinState[15]==1){
-    MIDI.sendNoteOn(MidiSave,127,1);  // Send a Note (pitch,velocity,channel)
+    MIDI.sendControlChange(MidiSave,1,1);  // Send a Note (CC,velocity,channel)
     pinState[15]=0;
   }
   else if(digitalRead(betaSW)==1 && pinState[15]==0){
-    MIDI.sendNoteOff(MidiSave,0,1);   // Stop the note
     pinState[15]=1;
+  }
+//**INPUT ACCELERATOR**
+  if(digitalRead(chiSW)==0 && pinState[16]==1){
+    fast=!fast;
+    pinState[16]=0;
+    auto val = fast ? HIGH:LOW;
+    digitalWrite(14, val);
+  }
+  else if(digitalRead(chiSW)==1 && pinState[16]==0)
+  {
+    pinState[16]=1;
   }
 
 //PIANO KEYS
